@@ -27,6 +27,25 @@ function! s:current_d2_block() abort
   \ }
 endfunction
 
+function! s:cursor_inside_d2p() abort
+  let l:save = getpos('.')
+
+  let l:d2p = search('^```d2p\s*$', 'bnW')
+  let l:fence = search('^```\s*$', 'bnW')
+
+  call setpos('.', l:save)
+
+  if l:d2p == 0
+    return v:false
+  endif
+
+  if l:fence > l:d2p
+    return v:false
+  endif
+
+  return v:true
+endfunction
+
 function! s:get_current_block_text() abort
   let l:block = s:current_d2_block()
 
@@ -55,6 +74,10 @@ function! s:on_d2_exit(jobid, code, event) dict abort
 endfunction
 
 function! s:run_d2_on(text, preview_bufnr) abort
+  if !s:cursor_inside_d2p()
+    return
+  endif
+
   let l:job = jobstart(
   \ ['d2', '--stdout-format', 'txt', '-'],
   \ {
@@ -101,6 +124,10 @@ endfunction
 " temporary functions for test. to be deleted in final.
 function! Temp_current_d2_block() abort
   return s:current_d2_block()
+endfunction
+
+function! Temp_cursor_inside_d2p() abort
+  return s:cursor_inside_d2p()
 endfunction
 
 function! Temp_get_current_block_text() abort

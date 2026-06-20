@@ -74,9 +74,6 @@ function! s:on_d2_exit(jobid, code, event) dict abort
 endfunction
 
 function! s:run_d2_on(text, preview_bufnr) abort
-  if !s:cursor_inside_d2p()
-    return
-  endif
 
   let l:job = jobstart(
   \ ['d2', '--stdout-format', 'txt', '-'],
@@ -116,9 +113,9 @@ function! s:d2_preview() abort
     wincmd p
   endif
 
-  call s:run_d2_on(
-  \ s:get_current_block_text(),
-  \ b:d2p.preview_bufnr)
+  if s:cursor_inside_d2p()
+	  call s:run_d2_on(s:get_current_block_text(), b:d2p.preview_bufnr)
+  endif
 endfunction
 
 " temporary functions for test. to be deleted in final.

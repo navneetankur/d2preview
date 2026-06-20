@@ -132,13 +132,13 @@ function! s:run_d2_on(text, preview_bufname) abort
 endfunction
 
 function! s:on_save() abort
-  if !(exists('b:d2p') && has_key(b:d2p, 'preview_bufname') && bufexists(b:d2p.preview_bufname))
+  if !(exists('b:d2p') && has_key(b:d2p, 'preview_bufname') && bufexists(b:d2p.preview_bufname) && s:cursor_inside_d2p())
     return
   endif
 
   if b:d2p.mode ==# 'file'
     call s:run_d2_on(s:all_d2_blocks_text(), b:d2p.preview_bufname)
-  elseif s:cursor_inside_d2p()
+  else
     call s:run_d2_on(s:get_current_block_text(), b:d2p.preview_bufname)
   endif
 endfunction
@@ -167,10 +167,12 @@ function! s:d2_preview(mode) abort
     wincmd p
   endif
 
-  if a:mode ==# 'file'
-    call s:run_d2_on(s:all_d2_blocks_text(), b:d2p.preview_bufname)
-  elseif s:cursor_inside_d2p()
-    call s:run_d2_on(s:get_current_block_text(), b:d2p.preview_bufname)
+  if s:cursor_inside_d2p()
+	  if a:mode ==# 'file'
+		call s:run_d2_on(s:all_d2_blocks_text(), b:d2p.preview_bufname)
+	  else
+		call s:run_d2_on(s:get_current_block_text(), b:d2p.preview_bufname)
+	  endif
   endif
 endfunction
 

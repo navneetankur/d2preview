@@ -6,7 +6,7 @@ A Vim/Neovim plugin to preview [d2](https://d2lang.com) blocks in markdown files
 
 In case of selection:
 + the markers are not needed.
-+ Re-render only happens if you save while cursor in inside a selection.
++ Re-render only happens if you save while cursor in inside the selection, initialy set by command.
 
 D2 blocks are of type
 ~~~markdown
@@ -20,4 +20,4 @@ In case of block (that is command is called without a selection)
 + no other block style is implemented.
 
 `:D2PreviewFile` — Preview all d2 blocks in the file concatenated together. Re-renders on save.
-Re-render will only happed if cursor is currently in a d2 block.
+Re-render will only happens if cursor is currently in a d2 block.

@@ -79,6 +79,12 @@ function! s:d2_preview() abort
     let l:preview_bufnr = bufadd(l:name)
     call bufload(l:preview_bufnr)
 
+    call setbufvar(l:preview_bufnr, '&buftype', 'nofile')
+    call setbufvar(l:preview_bufnr, '&bufhidden', 'wipe')
+    call setbufvar(l:preview_bufnr, '&swapfile', 0)
+    call setbufvar(l:preview_bufnr, '&modifiable', 0)
+    call setbufvar(l:preview_bufnr, '&readonly', 1)
+
     let b:d2p.preview_bufnr = l:preview_bufnr
 
     vsplit

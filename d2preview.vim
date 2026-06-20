@@ -1,8 +1,6 @@
-if exists('g:loaded_d2preview')
-  finish
+if has('nvim')
+  let s:d2p_ns = nvim_create_namespace('d2preview')
 endif
-" add it back after we done.
-" let g:loaded_d2preview = 1
 
 augroup d2preview
   autocmd!
@@ -87,10 +85,24 @@ function! s:cursor_inside_d2p() abort
   return v:true
 endfunction
 
+function! s:sel_start() abort
+  if has('nvim')
+    return nvim_buf_get_extmark_by_id(bufnr('%'), s:d2p_ns, b:d2p.sel_mark_start, {})[0] + 1
+  endif
+  return b:d2p.sel_start
+endfunction
+
+function! s:sel_end() abort
+  if has('nvim')
+    return nvim_buf_get_extmark_by_id(bufnr('%'), s:d2p_ns, b:d2p.sel_mark_end, {})[0] + 1
+  endif
+  return b:d2p.sel_end
+endfunction
+
 function! s:cursor_inside_selection() abort
   let l:line = line('.')
-  return l:line >= b:d2p.sel_start
-      \ && l:line <= b:d2p.sel_end
+  return l:line >= s:sel_start()
+      \ && l:line <= s:sel_end()
 endfunction
 
 function! s:get_current_block_text() abort
@@ -103,7 +115,7 @@ endfunction
 
 function! s:get_selection_text() abort
   return join(
-  \ getline(b:d2p.sel_start, b:d2p.sel_end),
+  \ getline(s:sel_start(), s:sel_end()),
   \ "\n")
 endfunction
 
@@ -240,8 +252,17 @@ function! s:d2_preview(mode = v:null) range abort
   endif
 
   if b:d2p.mode ==# 'selection'
-	  let b:d2p.sel_start = a:firstline
-	  let b:d2p.sel_end = a:lastline
+    if has('nvim')
+      if has_key(b:d2p, 'sel_mark_start')
+        call nvim_buf_del_extmark(bufnr('%'), s:d2p_ns, b:d2p.sel_mark_start)
+        call nvim_buf_del_extmark(bufnr('%'), s:d2p_ns, b:d2p.sel_mark_end)
+      endif
+      let b:d2p.sel_mark_start = nvim_buf_set_extmark(bufnr('%'), s:d2p_ns, a:firstline - 1, 0, {})
+      let b:d2p.sel_mark_end   = nvim_buf_set_extmark(bufnr('%'), s:d2p_ns, a:lastline - 1, 0, {})
+    else
+      let b:d2p.sel_start = a:firstline
+      let b:d2p.sel_end = a:lastline
+    endif
   endif
 
   if !has_key(b:d2p, 'preview_bufname') || !bufexists(b:d2p.preview_bufname)

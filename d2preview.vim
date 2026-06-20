@@ -142,11 +142,13 @@ function! s:on_d2_exit(jobid, code, event) dict abort
   else
 	  return
   endif
+  call setbufvar(self.d2p.preview_bufname, '&modifiable', 1)
   if a:code != 0
+    call appendbufline(a:d2p.preview_bufname, 0, ["[Rendering failed: ]",""])
+    call setbufvar(self.d2p.preview_bufname, '&modifiable', 0)
     return
   endif
 
-  call setbufvar(self.d2p.preview_bufname, '&modifiable', 1)
   silent! call deletebufline(self.d2p.preview_bufname, 1, '$')
   call setbufline(self.d2p.preview_bufname, 1, self.d2p.job_output)
   call setbufvar(self.d2p.preview_bufname, '&modifiable', 0)
@@ -167,11 +169,13 @@ function! s:vim_on_d2_exit(d2p, job, status) abort
   else
     return
   endif
+  call setbufvar(a:d2p.preview_bufname, '&modifiable', 1)
   if a:status != 0
+    call appendbufline(a:d2p.preview_bufname, 0, ["[Rendering failed: ]",""])
+    call setbufvar(a:d2p.preview_bufname, '&modifiable', 0)
     return
   endif
 
-  call setbufvar(a:d2p.preview_bufname, '&modifiable', 1)
   silent! call deletebufline(a:d2p.preview_bufname, 1, '$')
   call setbufline(a:d2p.preview_bufname, 1, a:d2p.job_output)
   call setbufvar(a:d2p.preview_bufname, '&modifiable', 0)

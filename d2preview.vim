@@ -107,6 +107,16 @@ function! s:get_selection_text() abort
   \ "\n")
 endfunction
 
+function! s:job_stop(job) abort
+  if has('nvim')
+    call jobstop(a:job)
+  else
+    call job_stop(a:job)
+  endif
+endfunction
+
+" --- Neovim callbacks ---
+
 function! s:on_d2_stdout(jobid, data, event) dict abort
   if !has_key(self.d2p, 'job_id') || a:jobid != self.d2p.job_id
     return
@@ -130,9 +140,34 @@ function! s:on_d2_exit(jobid, code, event) dict abort
   call setbufvar(self.d2p.preview_bufname, '&modifiable', 0)
 endfunction
 
+" --- Vim callbacks (out_cb fires per line; exit_cb fires on completion) ---
+
+function! s:vim_on_d2_stdout(d2p, channel, msg) abort
+  if !has_key(a:d2p, 'job_id') || job_getchannel(a:d2p.job_id) isnot a:channel
+    return
+  endif
+  call add(a:d2p.job_output, a:msg)
+endfunction
+
+function! s:vim_on_d2_exit(d2p, job, status) abort
+  if has_key(a:d2p, 'job_id') && a:job is a:d2p.job_id
+    unlet a:d2p.job_id
+  else
+    return
+  endif
+  if a:status != 0
+    return
+  endif
+
+  call setbufvar(a:d2p.preview_bufname, '&modifiable', 1)
+  silent! call deletebufline(a:d2p.preview_bufname, 1, '$')
+  call setbufline(a:d2p.preview_bufname, 1, a:d2p.job_output)
+  call setbufvar(a:d2p.preview_bufname, '&modifiable', 0)
+endfunction
+
 function! s:run_d2_on(d2p, text) abort
   if has_key(a:d2p, 'job_id')
-    call jobstop(a:d2p.job_id)
+    call s:job_stop(a:d2p.job_id)
   endif
   " call setbufvar(a:d2p.preview_bufname, '&modifiable', 1)
   " call appendbufline(a:d2p.preview_bufname, 0, ["[Rendering...]",""])
@@ -140,19 +175,34 @@ function! s:run_d2_on(d2p, text) abort
 
   let a:d2p.job_output = []
 
-  let l:job = jobstart(
-  \ ['d2', '--stdout-format', 'txt', '-'],
-  \ {
-  \ 'stdin': 'pipe',
-  \ 'stdout_buffered': v:true,
-  \ 'd2p': a:d2p,
-  \ 'on_stdout': function('s:on_d2_stdout'),
-  \ 'on_exit': function('s:on_d2_exit'),
-  \ })
-  let a:d2p.job_id = l:job
+  if has('nvim')
+    let l:job = jobstart(
+    \ ['d2', '--stdout-format', 'txt', '-'],
+    \ {
+    \ 'stdin': 'pipe',
+    \ 'stdout_buffered': v:true,
+    \ 'd2p': a:d2p,
+    \ 'on_stdout': function('s:on_d2_stdout'),
+    \ 'on_exit': function('s:on_d2_exit'),
+    \ })
+    let a:d2p.job_id = l:job
+    call chansend(l:job, a:text)
+    call chanclose(l:job, 'stdin')
+  else
+    let l:job = job_start(
+    \ ['d2', '--stdout-format', 'txt', '-'],
+    \ {
+    \ 'in_io': 'pipe',
+    \ 'out_io': 'pipe',
+    \ 'err_io': 'null',
+    \ 'out_cb': function('s:vim_on_d2_stdout', [a:d2p]),
+    \ 'exit_cb': function('s:vim_on_d2_exit', [a:d2p]),
+    \ })
+    let a:d2p.job_id = l:job
+    call ch_sendraw(job_getchannel(l:job), a:text)
+    call ch_close_in(job_getchannel(l:job))
+  endif
 
-  call chansend(l:job, a:text)
-  call chanclose(l:job, 'stdin')
   return l:job
 endfunction
 

@@ -32,6 +32,44 @@ function! s:current_d2_block() abort
   \ }
 endfunction
 
+function! s:all_d2_blocks() abort
+  let l:blocks = []
+  let l:lnum = 1
+
+  while l:lnum <= line('$')
+    let l:start = search('^```d2\s*$', 'nW', l:lnum)
+    if l:start == 0
+      break
+    endif
+
+    let l:end = search('^```\s*$', 'nW', l:start + 1)
+    if l:end == 0
+      break
+    endif
+
+    call add(l:blocks, {
+    \ 'line_start': l:start + 1,
+    \ 'line_end': l:end - 1,
+    \ })
+
+    let l:lnum = l:end + 1
+  endwhile
+
+  return l:blocks
+endfunction
+
+function! s:all_d2_blocks_text() abort
+  let l:parts = []
+
+  for l:block in s:all_d2_blocks()
+    call add(
+    \ l:parts,
+    \ join(getline(l:block.line_start, l:block.line_end), "\n"))
+  endfor
+
+  return join(l:parts, "\n\n")
+endfunction
+
 function! s:cursor_inside_d2p() abort
   let l:save = getpos('.')
   let l:d2p = search('^```d2\s*$', 'bnW')
@@ -128,6 +166,14 @@ endfunction
 
 function! Temp_current_d2_block() abort
   return s:current_d2_block()
+endfunction
+
+function! Temp_all_d2_blocks() abort
+  return s:all_d2_blocks()
+endfunction
+
+function! Temp_all_d2_blocks_text() abort
+  return s:all_d2_blocks_text()
 endfunction
 
 function! Temp_cursor_inside_d2p() abort

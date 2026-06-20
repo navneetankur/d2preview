@@ -48,8 +48,10 @@ function! s:on_d2_exit(jobid, code, event) dict abort
     return
   endif
 
-  call deletebufline(self.preview_bufnr, 1, '$')
+  call setbufvar(self.preview_bufnr, '&modifiable', 1)
+  silent! call deletebufline(self.preview_bufnr, 1, '$')
   call setbufline(self.preview_bufnr, 1, self.output)
+  call setbufvar(self.preview_bufnr, '&modifiable', 0)
 endfunction
 
 function! s:run_d2_on(text, preview_bufnr) abort
@@ -83,7 +85,6 @@ function! s:d2_preview() abort
     call setbufvar(l:preview_bufnr, '&bufhidden', 'wipe')
     call setbufvar(l:preview_bufnr, '&swapfile', 0)
     call setbufvar(l:preview_bufnr, '&modifiable', 0)
-    call setbufvar(l:preview_bufnr, '&readonly', 1)
 
     let b:d2p.preview_bufnr = l:preview_bufnr
 

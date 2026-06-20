@@ -26,27 +26,6 @@ selection
 block
 file
 ```
-
-Stored per source buffer:
-
-```vim
-b:d2_mode
-```
-
-Possible values:
-
-```text
-block
-file
-```
-
-Selection mode is active whenever:
-
-```vim
-exists(b:d2_start)
-exists(b:d2_end)
-```
-
 ---
 
 ## Manual Command
@@ -59,25 +38,11 @@ If `:D2Preview` is executed from a visual selection:
 2. Enter selection mode.
 3. Render only that range.
 
-Store:
-
-```vim
-b:d2_start
-b:d2_end
-```
-
 Example:
 
 ```text
 Lines 50-80 selected
 :D2Preview
-```
-
-stores:
-
-```vim
-b:d2_start = 50
-b:d2_end = 80
 ```
 
 Subsequent refreshes continue rendering that same range.
@@ -98,14 +63,8 @@ Command:
 
 without a visual selection:
 
-1. Clear any saved selection.
-2. Set:
-
-```vim
-b:d2_mode = "block"
-```
-
-3. Render the current D2 block.
+1. Set mode to block
+2. Render the current D2 block.
 
 Cursor must be inside a D2 block.
 
@@ -118,44 +77,14 @@ Command:
 ```vim
 :D2PreviewFile
 ```
-
-1. Clear any saved selection.
-2. Set:
-
-```vim
-b:d2_mode = "file"
-```
-
-3. Render all D2 blocks in the file.
-
----
-
-## Preview Target Priority
-
-```text
-Saved selection
-    >
-Mode=file
-Mode=block
-```
+1. Set mode to file
+2. Render all D2 blocks in the file.
 
 ---
 
 ## Preview Buffer
 
 One preview buffer per source buffer.
-
-Source buffer stores:
-
-```vim
-b:d2_preview_bufnr
-b:d2_preview_dirty
-b:d2_mode
-b:d2_start
-b:d2_end
-b:d2_job
-```
-
 Preview buffer settings:
 
 ```vim
@@ -257,28 +186,6 @@ jobstart(...)
 ```
 
 No blocking shell commands should run inside the editor.
-
----
-
-### Before Render
-
-Insert a status line at the top of the preview:
-
-```text
-[rendering...]
-```
-
-The previous successful preview remains visible.
-
-Example:
-
-```text
-[rendering...]
-
-(previous preview remains visible)
-```
-
-This feature is commented out. As i realized it's distarcting. let's not do status update for now. just update fully when done.
 
 ---
 

@@ -87,12 +87,24 @@ function! s:cursor_inside_d2p() abort
   return v:true
 endfunction
 
+function! s:cursor_inside_selection() abort
+  let l:line = line('.')
+  return l:line >= b:d2p.sel_start
+      \ && l:line <= b:d2p.sel_end
+endfunction
+
 function! s:get_current_block_text() abort
   let l:block = s:current_d2_block()
   if l:block is v:null
     return ''
   endif
   return join(getline(l:block.line_start, l:block.line_end), "\n")
+endfunction
+
+function! s:get_selection_text() abort
+  return join(
+  \ getline(b:d2p.sel_start, b:d2p.sel_end),
+  \ "\n")
 endfunction
 
 function! s:on_d2_stdout(jobid, data, event) dict abort
@@ -132,23 +144,42 @@ function! s:run_d2_on(text, preview_bufname) abort
 endfunction
 
 function! s:on_save() abort
-  if !(exists('b:d2p') && has_key(b:d2p, 'preview_bufname') && bufexists(b:d2p.preview_bufname) && s:cursor_inside_d2p())
+  if !(exists('b:d2p') && has_key(b:d2p, 'preview_bufname') && bufexists(b:d2p.preview_bufname))
     return
   endif
 
-  if b:d2p.mode ==# 'file'
-    call s:run_d2_on(s:all_d2_blocks_text(), b:d2p.preview_bufname)
-  else
-    call s:run_d2_on(s:get_current_block_text(), b:d2p.preview_bufname)
+  if b:d2p.mode ==# 'selection' 
+	  if s:cursor_inside_selection()
+		call s:run_d2_on(s:get_selection_text(), b:d2p.preview_bufname)
+	  else
+		return
+	  endif
+  elseif s:cursor_inside_d2p()
+	  if b:d2p.mode ==# 'file'
+		call s:run_d2_on(s:all_d2_blocks_text(), b:d2p.preview_bufname)
+	  else
+		call s:run_d2_on(s:get_current_block_text(), b:d2p.preview_bufname)
+	  endif
   endif
 endfunction
 
-function! s:d2_preview(mode) abort
+function! s:d2_preview(mode = v:null) range abort
   if !exists('b:d2p')
     let b:d2p = {}
   endif
-
   let b:d2p.mode = a:mode
+  if b:d2p.mode ==# v:null
+	  if a:firstline ==# a:lastline
+		  let b:d2p.mode = 'block'
+	  else
+		  let b:d2p.mode = 'selection'
+	  endif
+  endif
+
+  if b:d2p.mode ==# 'selection'
+	  let b:d2p.sel_start = a:firstline
+	  let b:d2p.sel_end = a:lastline
+  endif
 
   if !has_key(b:d2p, 'preview_bufname') || !bufexists(b:d2p.preview_bufname)
     let l:name = bufname('%') . '.' . rand() . '.d2p'
@@ -167,14 +198,18 @@ function! s:d2_preview(mode) abort
     wincmd p
   endif
 
-  if s:cursor_inside_d2p()
-	  if a:mode ==# 'file'
+  if b:d2p.mode ==# 'selection' "no cursor check needed. it's selection
+		call s:run_d2_on(s:get_selection_text(), b:d2p.preview_bufname)
+  elseif s:cursor_inside_d2p()
+	  if b:d2p.mode ==# 'file'
 		call s:run_d2_on(s:all_d2_blocks_text(), b:d2p.preview_bufname)
 	  else
 		call s:run_d2_on(s:get_current_block_text(), b:d2p.preview_bufname)
 	  endif
   endif
 endfunction
+
+command! -range D2Preview <line1>,<line2>call s:d2_preview()
 
 function! Temp_current_d2_block() abort
   return s:current_d2_block()
@@ -200,6 +235,6 @@ function! Temp_run_d2_on(text, preview_bufname) abort
   call s:run_d2_on(a:text, a:preview_bufname)
 endfunction
 
-function! Temp_d2_preview(mode) abort
-  call s:d2_preview(a:mode)
+function! Temp_d2_preview(mode) abort range
+  execute a:firstline..","..a:lastline.."call s:d2_preview('"..a:mode.."')"
 endfunction

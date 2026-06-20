@@ -4,6 +4,11 @@ endif
 " add it back after we done.
 " let g:loaded_d2preview = 1
 
+augroup d2preview
+  autocmd!
+  autocmd BufWritePost * call <SID>on_save()
+augroup END
+
 function! s:current_d2_block() abort
   let l:save = getpos('.')
   let l:cursor = line('.')
@@ -74,7 +79,6 @@ function! s:on_d2_exit(jobid, code, event) dict abort
 endfunction
 
 function! s:run_d2_on(text, preview_bufnr) abort
-
   let l:job = jobstart(
   \ ['d2', '--stdout-format', 'txt', '-'],
   \ {
@@ -88,6 +92,12 @@ function! s:run_d2_on(text, preview_bufnr) abort
 
   call chansend(l:job, a:text)
   call chanclose(l:job, 'stdin')
+endfunction
+
+function! s:on_save() abort
+  if exists('b:d2p') && has_key(b:d2p, 'preview_bufnr') && s:cursor_inside_d2p()
+    call s:run_d2_on(s:get_current_block_text(), b:d2p.preview_bufnr)
+  endif
 endfunction
 
 function! s:d2_preview() abort
@@ -114,7 +124,7 @@ function! s:d2_preview() abort
   endif
 
   if s:cursor_inside_d2p()
-	  call s:run_d2_on(s:get_current_block_text(), b:d2p.preview_bufnr)
+    call s:run_d2_on(s:get_current_block_text(), b:d2p.preview_bufnr)
   endif
 endfunction
 

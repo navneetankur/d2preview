@@ -210,3 +210,4 @@ function! s:d2_preview(mode = v:null) range abort
 endfunction
 
 command! -range D2Preview <line1>,<line2>call s:d2_preview()
+command! D2PreviewFile call s:d2_preview('file')

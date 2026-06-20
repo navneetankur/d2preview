@@ -30,7 +30,7 @@ endfunction
 function! s:cursor_inside_d2p() abort
   let l:save = getpos('.')
 
-  let l:d2p = search('^```d2p\s*$', 'bnW')
+  let l:d2p = search('^```d2\s*$', 'bnW')
   let l:fence = search('^```\s*$', 'bnW')
 
   call setpos('.', l:save)

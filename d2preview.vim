@@ -108,39 +108,50 @@ function! s:get_selection_text() abort
 endfunction
 
 function! s:on_d2_stdout(jobid, data, event) dict abort
-  let self.output = a:data
+  if !has_key(self.d2p, 'job_id') || a:jobid != self.d2p.job_id
+    return
+  endif
+  call extend(self.d2p.job_output, a:data)
 endfunction
 
 function! s:on_d2_exit(jobid, code, event) dict abort
-  if a:code != 0
+  if a:code != 0 || !has_key(self.d2p, 'job_id') || a:jobid != self.d2p.job_id
     return
   endif
 
-  let l:bufnr = bufnr(self.preview_bufname)
+
+  let l:bufnr = bufnr(self.d2p.preview_bufname)
   if l:bufnr == -1
     return
   endif
 
   call setbufvar(l:bufnr, '&modifiable', 1)
   silent! call deletebufline(l:bufnr, 1, '$')
-  call setbufline(l:bufnr, 1, self.output)
+  call setbufline(l:bufnr, 1, self.d2p.job_output)
   call setbufvar(l:bufnr, '&modifiable', 0)
 endfunction
 
-function! s:run_d2_on(text, preview_bufname) abort
+function! s:run_d2_on(d2p, text) abort
+  if has_key(a:d2p, 'job_id')
+    call jobstop(a:d2p.job_id)
+  endif
+
+  let a:d2p.job_output = []
+
   let l:job = jobstart(
   \ ['d2', '--stdout-format', 'txt', '-'],
   \ {
   \ 'stdin': 'pipe',
   \ 'stdout_buffered': v:true,
-  \ 'output': [],
-  \ 'preview_bufname': a:preview_bufname,
+  \ 'd2p': a:d2p,
   \ 'on_stdout': function('s:on_d2_stdout'),
   \ 'on_exit': function('s:on_d2_exit'),
   \ })
+  let a:d2p.job_id = l:job
 
   call chansend(l:job, a:text)
   call chanclose(l:job, 'stdin')
+  return l:job
 endfunction
 
 function! s:on_save() abort
@@ -150,15 +161,15 @@ function! s:on_save() abort
 
   if b:d2p.mode ==# 'selection' 
 	  if s:cursor_inside_selection()
-		call s:run_d2_on(s:get_selection_text(), b:d2p.preview_bufname)
+		call s:run_d2_on(b:d2p, s:get_selection_text())
 	  else
 		return
 	  endif
   elseif s:cursor_inside_d2p()
 	  if b:d2p.mode ==# 'file'
-		call s:run_d2_on(s:all_d2_blocks_text(), b:d2p.preview_bufname)
+		call s:run_d2_on(b:d2p, s:all_d2_blocks_text())
 	  else
-		call s:run_d2_on(s:get_current_block_text(), b:d2p.preview_bufname)
+		call s:run_d2_on(b:d2p, s:get_current_block_text())
 	  endif
   endif
 endfunction
@@ -199,12 +210,12 @@ function! s:d2_preview(mode = v:null) range abort
   endif
 
   if b:d2p.mode ==# 'selection' "no cursor check needed. it's selection
-		call s:run_d2_on(s:get_selection_text(), b:d2p.preview_bufname)
+		call s:run_d2_on(b:d2p, s:get_selection_text())
   elseif s:cursor_inside_d2p()
 	  if b:d2p.mode ==# 'file'
-		call s:run_d2_on(s:all_d2_blocks_text(), b:d2p.preview_bufname)
+		call s:run_d2_on(b:d2p, s:all_d2_blocks_text())
 	  else
-		call s:run_d2_on(s:get_current_block_text(), b:d2p.preview_bufname)
+		call s:run_d2_on(b:d2p, s:get_current_block_text())
 	  endif
   endif
 endfunction

@@ -35,7 +35,6 @@ endfunction
 function! s:all_d2_blocks() abort
   let l:save = getpos('.')
   let l:blocks = []
-
   call cursor(1, 1)
 
   while 1
@@ -56,7 +55,6 @@ function! s:all_d2_blocks() abort
   endwhile
 
   call setpos('.', l:save)
-
   return l:blocks
 endfunction
 
@@ -134,15 +132,23 @@ function! s:run_d2_on(text, preview_bufname) abort
 endfunction
 
 function! s:on_save() abort
-  if exists('b:d2p') && has_key(b:d2p, 'preview_bufname') && bufexists(b:d2p.preview_bufname) && s:cursor_inside_d2p()
+  if !(exists('b:d2p') && has_key(b:d2p, 'preview_bufname') && bufexists(b:d2p.preview_bufname))
+    return
+  endif
+
+  if b:d2p.mode ==# 'file'
+    call s:run_d2_on(s:all_d2_blocks_text(), b:d2p.preview_bufname)
+  elseif s:cursor_inside_d2p()
     call s:run_d2_on(s:get_current_block_text(), b:d2p.preview_bufname)
   endif
 endfunction
 
-function! s:d2_preview() abort
+function! s:d2_preview(mode) abort
   if !exists('b:d2p')
     let b:d2p = {}
   endif
+
+  let b:d2p.mode = a:mode
 
   if !has_key(b:d2p, 'preview_bufname') || !bufexists(b:d2p.preview_bufname)
     let l:name = bufname('%') . '.' . rand() . '.d2p'
@@ -161,7 +167,9 @@ function! s:d2_preview() abort
     wincmd p
   endif
 
-  if s:cursor_inside_d2p()
+  if a:mode ==# 'file'
+    call s:run_d2_on(s:all_d2_blocks_text(), b:d2p.preview_bufname)
+  elseif s:cursor_inside_d2p()
     call s:run_d2_on(s:get_current_block_text(), b:d2p.preview_bufname)
   endif
 endfunction
@@ -190,6 +198,6 @@ function! Temp_run_d2_on(text, preview_bufname) abort
   call s:run_d2_on(a:text, a:preview_bufname)
 endfunction
 
-function! Temp_d2_preview() abort
-  call s:d2_preview()
+function! Temp_d2_preview(mode) abort
+  call s:d2_preview(a:mode)
 endfunction

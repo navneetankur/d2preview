@@ -34,10 +34,8 @@ endfunction
 
 function! s:cursor_inside_d2p() abort
   let l:save = getpos('.')
-
   let l:d2p = search('^```d2\s*$', 'bnW')
   let l:fence = search('^```\s*$', 'bnW')
-
   call setpos('.', l:save)
 
   if l:d2p == 0
@@ -53,14 +51,10 @@ endfunction
 
 function! s:get_current_block_text() abort
   let l:block = s:current_d2_block()
-
   if l:block is v:null
     return ''
   endif
-
-  return join(
-  \ getline(l:block.line_start, l:block.line_end),
-  \ "\n")
+  return join(getline(l:block.line_start, l:block.line_end), "\n")
 endfunction
 
 function! s:on_d2_stdout(jobid, data, event) dict abort
@@ -72,20 +66,25 @@ function! s:on_d2_exit(jobid, code, event) dict abort
     return
   endif
 
-  call setbufvar(self.preview_bufnr, '&modifiable', 1)
-  silent! call deletebufline(self.preview_bufnr, 1, '$')
-  call setbufline(self.preview_bufnr, 1, self.output)
-  call setbufvar(self.preview_bufnr, '&modifiable', 0)
+  let l:bufnr = bufnr(self.preview_bufname)
+  if l:bufnr == -1
+    return
+  endif
+
+  call setbufvar(l:bufnr, '&modifiable', 1)
+  silent! call deletebufline(l:bufnr, 1, '$')
+  call setbufline(l:bufnr, 1, self.output)
+  call setbufvar(l:bufnr, '&modifiable', 0)
 endfunction
 
-function! s:run_d2_on(text, preview_bufnr) abort
+function! s:run_d2_on(text, preview_bufname) abort
   let l:job = jobstart(
   \ ['d2', '--stdout-format', 'txt', '-'],
   \ {
   \ 'stdin': 'pipe',
   \ 'stdout_buffered': v:true,
   \ 'output': [],
-  \ 'preview_bufnr': a:preview_bufnr,
+  \ 'preview_bufname': a:preview_bufname,
   \ 'on_stdout': function('s:on_d2_stdout'),
   \ 'on_exit': function('s:on_d2_exit'),
   \ })
@@ -95,8 +94,8 @@ function! s:run_d2_on(text, preview_bufnr) abort
 endfunction
 
 function! s:on_save() abort
-  if exists('b:d2p') && has_key(b:d2p, 'preview_bufnr') && s:cursor_inside_d2p()
-    call s:run_d2_on(s:get_current_block_text(), b:d2p.preview_bufnr)
+  if exists('b:d2p') && has_key(b:d2p, 'preview_bufname') && s:cursor_inside_d2p()
+    call s:run_d2_on(s:get_current_block_text(), b:d2p.preview_bufname)
   endif
 endfunction
 
@@ -105,9 +104,8 @@ function! s:d2_preview() abort
     let b:d2p = {}
   endif
 
-  if !has_key(b:d2p, 'preview_bufnr') || !bufexists(b:d2p.preview_bufnr)
+  if !has_key(b:d2p, 'preview_bufname') || bufnr(b:d2p.preview_bufname) == -1
     let l:name = bufname('%') . '.' . rand() . '.d2p'
-
     let l:preview_bufnr = bufadd(l:name)
     call bufload(l:preview_bufnr)
 
@@ -116,7 +114,7 @@ function! s:d2_preview() abort
     call setbufvar(l:preview_bufnr, '&swapfile', 0)
     call setbufvar(l:preview_bufnr, '&modifiable', 0)
 
-    let b:d2p.preview_bufnr = l:preview_bufnr
+    let b:d2p.preview_bufname = l:name
 
     vsplit
     execute 'buffer ' . l:preview_bufnr
@@ -124,11 +122,10 @@ function! s:d2_preview() abort
   endif
 
   if s:cursor_inside_d2p()
-    call s:run_d2_on(s:get_current_block_text(), b:d2p.preview_bufnr)
+    call s:run_d2_on(s:get_current_block_text(), b:d2p.preview_bufname)
   endif
 endfunction
 
-" temporary functions for test. to be deleted in final.
 function! Temp_current_d2_block() abort
   return s:current_d2_block()
 endfunction
@@ -141,8 +138,8 @@ function! Temp_get_current_block_text() abort
   return s:get_current_block_text()
 endfunction
 
-function! Temp_run_d2_on(text, preview_bufnr) abort
-  call s:run_d2_on(a:text, a:preview_bufnr)
+function! Temp_run_d2_on(text, preview_bufname) abort
+  call s:run_d2_on(a:text, a:preview_bufname)
 endfunction
 
 function! Temp_d2_preview() abort

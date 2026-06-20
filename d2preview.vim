@@ -124,15 +124,10 @@ function! s:on_d2_exit(jobid, code, event) dict abort
     return
   endif
 
-  let l:bufnr = bufnr(self.d2p.preview_bufname)
-  if l:bufnr == -1
-    return
-  endif
-
-  call setbufvar(l:bufnr, '&modifiable', 1)
-  silent! call deletebufline(l:bufnr, 1, '$')
-  call setbufline(l:bufnr, 1, self.d2p.job_output)
-  call setbufvar(l:bufnr, '&modifiable', 0)
+  call setbufvar(self.d2p.preview_bufname, '&modifiable', 1)
+  silent! call deletebufline(self.d2p.preview_bufname, 1, '$')
+  call setbufline(self.d2p.preview_bufname, 1, self.d2p.job_output)
+  call setbufvar(self.d2p.preview_bufname, '&modifiable', 0)
 endfunction
 
 function! s:run_d2_on(d2p, text) abort

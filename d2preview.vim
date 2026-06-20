@@ -139,9 +139,9 @@ function! s:run_d2_on(d2p, text) abort
   if has_key(a:d2p, 'job_id')
     call jobstop(a:d2p.job_id)
   endif
-  call setbufvar(a:d2p.preview_bufname, '&modifiable', 1)
-  call appendbufline(a:d2p.preview_bufname, 0, ["[Rendering...]",""])
-  call setbufvar(a:d2p.preview_bufname, '&modifiable', 0)
+  " call setbufvar(a:d2p.preview_bufname, '&modifiable', 1)
+  " call appendbufline(a:d2p.preview_bufname, 0, ["[Rendering...]",""])
+  " call setbufvar(a:d2p.preview_bufname, '&modifiable', 0)
 
   let a:d2p.job_output = []
 

@@ -115,10 +115,14 @@ function! s:on_d2_stdout(jobid, data, event) dict abort
 endfunction
 
 function! s:on_d2_exit(jobid, code, event) dict abort
-  if a:code != 0 || !has_key(self.d2p, 'job_id') || a:jobid != self.d2p.job_id
+  if has_key(self.d2p, 'job_id') && a:jobid ==# self.d2p.job_id
+	  unlet self.d2p.job_id
+  else
+	  return
+  endif
+  if a:code != 0
     return
   endif
-
 
   let l:bufnr = bufnr(self.d2p.preview_bufname)
   if l:bufnr == -1
